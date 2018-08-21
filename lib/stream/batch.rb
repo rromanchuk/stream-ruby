@@ -19,11 +19,31 @@ module Stream
     def follow_many(follows, activity_copy_limit = nil)
       query_params = {}
       unless activity_copy_limit.nil?
-        query_params["activity_copy_limit"] = activity_copy_limit
+        query_params['activity_copy_limit'] = activity_copy_limit
       end
-      make_signed_request(:post, "/follow_many/", query_params, follows)
+      make_signed_request(:post, '/follow_many/', query_params, follows)
     end
 
+    #
+    # Unfollow many feeds in one single request
+    #
+    # @param [Array<Hash<:source, :target, :keep_history>>] unfollows the list of follows to remove.
+    #
+    # return [nil]
+    #
+    # @example
+    #
+    #
+    # unfollows = [
+    #   {source: 'user:1', target: 'timeline:1'},
+    #   {source: 'user:2', target: 'timeline:2', keep_history: false}
+    # ]
+    # @client.unfollow_many(unfollows)
+    #
+    def unfollow_many(unfollows)
+      make_signed_request(:post, '/unfollow_many/', {}, unfollows)
+    end
+    
     #
     # Adds an activity to many feeds in one single request
     #
@@ -37,7 +57,7 @@ module Stream
         :feeds => feeds,
         :activity => activity_data
       }
-      make_signed_request(:post, "/feed/add_to_many/", {}, data)
+      make_signed_request(:post, '/feed/add_to_many/', {}, data)
     end
   end
 end

@@ -2,6 +2,132 @@
  Change history
 ================
 
+2.9.3
+=====
+:release-date: 2018-08-02
+:by: Federico Ruggi
+
+* Fixed a bug with add_activity causing alteration in the original activity.
+
+2.9.2
+======
+:release-date: 2018-07-24
+:by: Federico Ruggi
+
+* Changed partial activity update endpoint method name to uniform with the other clients.
+
+2.9.1
+=====
+:release-date: 2018-07-12
+:by: Federico Ruggi
+
+* Changed default params format for single activity retrieval by foreign ID.
+
+2.9.0
+=====
+:release-date: 2018-07-11
+:by: Federico Ruggi
+
+* Added support for partial activity update endpoint.
+
+2.8.0
+=====
+:release-date: 2018-07-10
+:by: Federico Ruggi
+
+* Added support for get activities endpoint.
+
+2.7.1
+=====
+:release-date: 2018-06-29
+:by: Federico Ruggi
+
+* Relaxed jwt dependency.
+
+2.7.0
+=====
+:release-date: 2018-05-03
+:by: Federico Ruggi
+
+* Add support for unfollow many endpoint.
+
+2.6.1
+=====
+:release-date: 2018-04-26
+:by: Federico Ruggi
+
+* Fix client options defaults when nil values are provided.
+
+2.6.0
+=====
+:release-date: 2018-04-17
+:by: Federico Ruggi
+
+* Added support for personalization and collections endpoints.
+
+2.5.10
+=====
+:release-date: 2017-12-01
+:by: Ian Douglas
+
+* Minor modification for Faraday middleware warning
+
+2.5.9
+=====
+:release-date: 2017-10-16
+:by: Ian Douglas
+
+* updating core API hostname to our new .com domain
+* added support to change the core hostname when instantiating the client (options[:api_hostame])
+
+2.5.8
+=====
+:release-date: 2017-09-21
+:by: Ian Douglas
+
+* updating Ruby language version support on Travis-CI
+
+2.5.7
+=====
+:release-date: 2017-09-12
+:by: Shu Yang Quek (community member)
+
+* updates for
+
+2.5.6
+=====
+:release-date: 2017-06-09
+:by: Ian Douglas
+
+* allowing versions of Faraday greater than v0.10 but less than 1.0
+
+2.5.5
+=====
+:release-date: 2017-05-23
+:by: Ian Douglas
+
+* fixed bug with activity_copy_limit when a single feed follows another
+
+2.5.4
+=====
+:release-date: 2017-03-22
+:by: Ian Douglas
+
+* fixed error messages when exceptions happen on response payloads (fixed from a bad 2.5.3 release)
+
+2.5.2
+=====
+:by: Tommaso Burbugli
+
+* fixed parameter ordering
+
+2.5.1
+=====
+:release-date: 2017-01-10
+:by: Ian Douglas
+
+* customers reported non-empty GET bodies, which mess up auth signing
+
 2.5.0
 =====
 :release-date: 2016-12-19
