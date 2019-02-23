@@ -1,11 +1,16 @@
 require 'spec_helper'
 require 'date'
+require './spec/support/utils'
+
+RSpec.configure do |c|
+  c.include Utils
+end
 
 describe 'Integration tests' do
   before do
-    @client = Stream::Client.new(ENV['STREAM_API_KEY'], ENV['STREAM_API_SECRET'], nil, location: ENV['STREAM_REGION'])
-    @feed42 = @client.feed('flat', 'r42')
-    @feed43 = @client.feed('flat', 'r43')
+    @client = Stream::Client.new(ENV['STREAM_API_KEY'], ENV['STREAM_API_SECRET'], nil, location: ENV['STREAM_REGION'], default_timeout: 10)
+    @feed42 = @client.feed('flat', generate_uniq_feed_name)
+    @feed43 = @client.feed('flat', generate_uniq_feed_name)
 
     @test_activity = {:actor => 1, :verb => 'tweet', :object => 1}
   end
@@ -27,12 +32,8 @@ describe 'Integration tests' do
       [response[0]['actor'], response[1]['actor']].should =~ actors
     end
 
-    example 'expose token from user feed' do
-      @feed42.token.should match('.+')
-    end
-
     example 'mark_seen=true should not mark read' do
-      feed = @client.feed('notification', 'rb1')
+      feed = @client.feed('notification', generate_uniq_feed_name)
       feed.add_activity(:actor => 1, :verb => 'tweet', :object => 1)
       feed.add_activity(:actor => 2, :verb => 'share', :object => 1)
       feed.add_activity(:actor => 3, :verb => 'run', :object => 1)
@@ -51,7 +52,7 @@ describe 'Integration tests' do
     end
 
     example 'mark_read=true should not mark seen' do
-      feed = @client.feed('notification', 'rb1')
+      feed = @client.feed('notification', generate_uniq_feed_name)
       feed.add_activity(:actor => 1, :verb => 'tweet', :object => 1)
       feed.add_activity(:actor => 2, :verb => 'share', :object => 1)
       feed.add_activity(:actor => 3, :verb => 'run', :object => 1)
@@ -70,7 +71,7 @@ describe 'Integration tests' do
     end
 
     example 'set feed as read' do
-      feed = @client.feed('notification', 'b1')
+      feed = @client.feed('notification', generate_uniq_feed_name)
       feed.add_activity(:actor => 1, :verb => 'tweet', :object => 1)
       feed.add_activity(:actor => 2, :verb => 'share', :object => 1)
       feed.add_activity(:actor => 3, :verb => 'run', :object => 1)
@@ -86,7 +87,7 @@ describe 'Integration tests' do
     end
 
     example 'set activities as read' do
-      feed = @client.feed('notification', 'rb2')
+      feed = @client.feed('notification', generate_uniq_feed_name)
       feed.add_activity(:actor => 1, :verb => 'tweet', :object => 1)
       feed.add_activity(:actor => 2, :verb => 'share', :object => 1)
       feed.add_activity(:actor => 3, :verb => 'run', :object => 1)
@@ -100,7 +101,7 @@ describe 'Integration tests' do
     end
 
     example 'set feed as seen' do
-      feed = @client.feed('notification', 'rb3')
+      feed = @client.feed('notification', generate_uniq_feed_name)
       feed.add_activity(:actor => 1, :verb => 'tweet', :object => 1)
       feed.add_activity(:actor => 2, :verb => 'share', :object => 1)
       feed.add_activity(:actor => 3, :verb => 'run', :object => 1)
@@ -116,7 +117,7 @@ describe 'Integration tests' do
     end
 
     example 'set activities as seen' do
-      feed = @client.feed('notification', 'rb4')
+      feed = @client.feed('notification', generate_uniq_feed_name)
       feed.add_activity(:actor => 1, :verb => 'tweet', :object => 1)
       feed.add_activity(:actor => 2, :verb => 'share', :object => 1)
       feed.add_activity(:actor => 3, :verb => 'run', :object => 1)
@@ -130,14 +131,14 @@ describe 'Integration tests' do
     end
 
     example 'posting an activity with datetime object' do
-      feed = @client.feed('flat', 'time42')
+      feed = @client.feed('flat', generate_uniq_feed_name)
       activity = {:actor => 1, :verb => 'tweet', :object => 1, :time => DateTime.now}
       response = feed.add_activity(activity)
       response.should include('id', 'actor', 'verb', 'object', 'target', 'time')
     end
 
     example 'localised datetimes should be returned in UTC correctly' do
-      feed = @client.feed('flat', 'time43')
+      feed = @client.feed('flat', generate_uniq_feed_name)
       now = DateTime.now.new_offset(5)
       activity = {:actor => 1, :verb => 'tweet', :object => 1, :time => now}
       response = feed.add_activity(activity)
@@ -171,7 +172,7 @@ describe 'Integration tests' do
     end
 
     example 'removing an activity' do
-      feed = @client.feed('flat', 'removing_an_activity')
+      feed = @client.feed('flat', generate_uniq_feed_name)
       response = feed.add_activity(@test_activity)
       results = feed.get(:limit => 1)['results']
       results[0]['id'].should eq response['id']
@@ -194,7 +195,7 @@ describe 'Integration tests' do
       context 'should copy an activity' do
         example 'when no copy limit is mentioned' do
           feed1 = @client.feed('flat', '1')
-          feed2 = @client.feed('flat', 'activity_copy_not_given')
+          feed2 = @client.feed('flat', generate_uniq_feed_name)
           feed1.add_activity(@test_activity)
           feed2.follow('flat', '1')
           results = feed2.get['results']
@@ -203,7 +204,7 @@ describe 'Integration tests' do
         end
         example 'when a copy limit is given' do
           feed1 = @client.feed('flat', '1')
-          feed2 = @client.feed('flat', 'activity_copy_given')
+          feed2 = @client.feed('flat', generate_uniq_feed_name)
           feed1.add_activity(@test_activity)
           feed2.follow('flat', '1', 300)
           results = feed2.get['results']
@@ -214,7 +215,7 @@ describe 'Integration tests' do
       context 'should not copy an activity' do
         example 'when limit is set to 0' do
           feed1 = @client.feed('flat', '1')
-          feed2 = @client.feed('flat', 'activity_copy_0')
+          feed2 = @client.feed('flat', generate_uniq_feed_name)
           feed1.add_activity(@test_activity)
           feed2.follow('flat', '1', 0)
           results = feed2.get['results']
@@ -225,7 +226,7 @@ describe 'Integration tests' do
     end
 
     example 'retrieve feed with no followers' do
-      lonely = @client.feed('flat', 'lkjasdlkjalskdjlkjasd')
+      lonely = @client.feed('flat', generate_uniq_feed_name)
       response = lonely.followers
       response['results'].should eq []
     end
@@ -311,6 +312,38 @@ describe 'Integration tests' do
       [response[0]['actor'], response[1]['actor']].should =~ actors
     end
 
+    example 'update to targets' do
+      foreign_id = "user:1"
+      time = DateTime.now
+      activity = {
+        :actor => 'tommaso',
+        :verb => 'tweet',
+        :object => 1,
+        :to => ["user:1", "user:2"],
+        :foreign_id => foreign_id,
+        :time => time
+      }
+      @feed42.add_activity(activity)
+
+      response = @feed42.update_activity_to_targets(
+        foreign_id, time, new_targets: ["user:3", "user:2"]
+      )
+      response["activity"]["to"].length.should eq 2
+      response["activity"]["to"].should include("user:2")
+      response["activity"]["to"].should include("user:3")
+
+      response = @feed42.update_activity_to_targets(
+        foreign_id,
+        time,
+        added_targets: ["user:4", "user:5"],
+        removed_targets: ["user:3"],
+      )
+      response["activity"]["to"].length.should eq 3
+      response["activity"]["to"].should include("user:2")
+      response["activity"]["to"].should include("user:4")
+      response["activity"]["to"].should include("user:5")
+    end
+
     example 'read from a feed' do
       @feed42.get
       @feed42.get(:limit => 5)
@@ -323,64 +356,54 @@ describe 'Integration tests' do
       end.to raise_error Stream::StreamApiResponseException
     end
 
-    if Stream::Client.respond_to?('supports_signed_requests')
-      # it "should be able to send signed requests" do
-      #   @client.make_signed_request(:get, "/test/auth/digest/")
-      # end
-      #
-      # it "should be able to send signed requests with data" do
-      #   @client.make_signed_request(:post, "/test/auth/digest/", {}, :var => [1, 2, "3"])
-      # end
+    it 'should be able to follow many feeds in one request' do
+      follows = [
+        {:source => 'flat:1', :target => 'user:1'},
+        {:source => 'flat:1', :target => 'user:3'}
+      ]
+      @client.follow_many(follows)
+    end
 
-      it 'should be able to follow many feeds in one request' do
-        follows = [
-            {:source => 'flat:1', :target => 'user:1'},
-            {:source => 'flat:1', :target => 'user:3'}
-        ]
-        @client.follow_many(follows)
-      end
+    it 'should return an appropriate error if following many fails' do
+      follows = [
+        {:source => 'badfeed:1', :target => 'alsobad:1'},
+        {:source => 'extrabadfeed:1', :target => 'reallybad:3'}
+      ]
+      url = @client.get_http_client.conn.url_prefix.to_s.gsub(/\/+$/, '')
+      expect do
+        @client.follow_many(follows, 5000)
+      end.to raise_error(
+        Stream::StreamApiResponseException,
+        /^POST #{url}\/follow_many\/\?activity_copy_limit=5000&api_key=[^:]+: 400: InputException details: activity_copy_limit must be a non-negative number not greater than 1000$/
+      )
+    end
 
-      it 'should return an appropriate error if following many fails' do
-        follows = [
-            {:source => 'badfeed:1', :target => 'alsobad:1'},
-            {:source => 'extrabadfeed:1', :target => 'reallybad:3'}
-        ]
-        url = @client.get_http_client.conn.url_prefix.to_s.gsub(/\/+$/, '')
-        expect do
-          @client.follow_many(follows, 5000)
-        end.to raise_error(
-                   Stream::StreamApiResponseException,
-                   /^POST #{url}\/follow_many\/\?activity_copy_limit=5000&api_key=[^:]+: 400: InputException details: activity_copy_limit must be a non-negative number not greater than 1000$/
-               )
-      end
+    it 'should be able to unfollow many feeds in one request' do
+      unfollows = [
+        {source: 'user:1', target: 'timeline:1'},
+        {source: 'user:2', target: 'timeline:2', keep_history: false}
+      ]
+      @client.unfollow_many(unfollows)
+    end
 
-      it 'should be able to unfollow many feeds in one request' do
-        unfollows = [
-          {source: 'user:1', target: 'timeline:1'},
-          {source: 'user:2', target: 'timeline:2', keep_history: false}
-        ]
+    it 'should return an error if unfollowing many fails' do
+      unfollows = [
+        {source: 'user:1', target: 'timeline:1'},
+        {source: 'user:2', target: 42, keep_history: false}
+      ]
+      url = @client.get_http_client.conn.url_prefix.to_s.gsub(/\/+$/, '')
+      expect do
         @client.unfollow_many(unfollows)
-      end
+      end.to raise_error(
+        Stream::StreamApiResponseException,
+        /^POST #{url}\/unfollow_many\/\?api_key=[^:]+: 400: InputException details: invalid request payload$/
+      )
+    end
 
-      it 'should return an error if unfollowing many fails' do
-        unfollows = [
-          {source: 'user:1', target: 'timeline:1'},
-          {source: 'user:2', target: 42, keep_history: false}
-        ]
-        url = @client.get_http_client.conn.url_prefix.to_s.gsub(/\/+$/, '')
-        expect do
-          @client.unfollow_many(unfollows)
-        end.to raise_error(
-          Stream::StreamApiResponseException,
-          /^POST #{url}\/unfollow_many\/\?api_key=[^:]+: 400: InputException details: invalid request payload$/
-        )
-      end
-
-      it 'should be able to add one activity to many feeds in one request' do
-        feeds = %w(flat:1 flat:2 flat:3 flat:4)
-        activity_data = {:actor => 'tommaso', :verb => 'tweet', :object => 1}
-        @client.add_to_many(activity_data, feeds)
-      end
+    it 'should be able to add one activity to many feeds in one request' do
+      feeds = %w(flat:1 flat:2 flat:3 flat:4)
+      activity_data = {:actor => 'tommaso', :verb => 'tweet', :object => 1}
+      @client.add_to_many(activity_data, feeds)
     end
 
     example 'updating many feed activities' do
@@ -419,8 +442,46 @@ describe 'Integration tests' do
       end
     end
 
-    example 'collections endpoints' do
+    describe "collection CRUD endpoints" do
+      before do
+        @item_id = SecureRandom.uuid
+      end
+      example "add object to collection" do
+        response = @client.collections.add("animals", {type: "bear", location: "forest"})
+        response.should include("id", "duration", "collection", "foreign_id", "data", "created_at", "updated_at")
+        response["collection"].should eq "animals"
+        response["data"].should eq "type" => "bear", "location" => "forest"
+      end
+      example "add object to collection twice" do
+        @client.collections.add("animals", {type: "bear"}, :id => @item_id)
+        expect{@client.collections.add("animals", {}, :id => @item_id)}.to raise_error Stream::StreamApiResponseException
+      end
+      example "get collection item" do
+        @client.collections.add("animals", {type: "fox"}, :id => @item_id)
+        response = @client.collections.get("animals", @item_id)
+        response["id"].should eq @item_id
+        response["collection"].should eq "animals"
+        response["foreign_id"].should eq "animals:#{@item_id}"
+        response["data"].should eq "type" => "fox"
+      end
+      example "collection item update" do
+        @client.collections.add("animals", {type: "dog"}, :id => @item_id)
+        response = @client.collections.update("animals", @item_id, :data => {type: "cat"})
+        response["data"].should eq "type" => "cat"
+      end
+      example "collection item delete" do
+        @client.collections.add("animals", {type: "snake"}, :id => @item_id)
+        @client.collections.delete("animals", @item_id)
+        expect{@client.collections.get("animals", @item_id)}.to raise_error Stream::StreamApiResponseException
+      end
+    end
+
+    example 'collections batch endpoints' do
       collections = @client.collections
+
+      # refs
+      collections.create_reference('foo', 'bar').should eql 'SO:foo:bar'
+
       # upsert
       objects = [
         {
@@ -456,39 +517,49 @@ describe 'Integration tests' do
       response['data']['test'].should =~ expected
 
       # get
-      response = collections.get('test', ['aabbcc', 'ddeeff'])
+      response = collections.select('test', ['aabbcc', 'ddeeff'])
       response.should include('duration', 'response')
+      response['response']['data'].length.should eq 2
+      response['response']['data'][0].should include('id', 'collection', 'foreign_id', 'data', 'created_at', 'updated_at')
       expected = [
         {
+          'id' => 'aabbcc',
+          'collection' => 'test',
           'foreign_id' => 'test:aabbcc',
           'data' => {
             'data' => {
               'hobbies' => ['playing', 'sleeping', 'eating']
             },
             'name' => 'juniper'
-          }
+          },
         },
         {
+          'id' => 'ddeeff',
+          'collection' => 'test',
           'foreign_id' => 'test:ddeeff',
           'data' => {
             'data' => {
               'interests' => ['sunbeams', 'surprise attacks']
             },
             'name' => 'ruby'
-          }
+          },
         }
       ]
-      response['response']['data'].should =~ expected
+      check = response['response']['data']
+      check.each { |h| h.delete("created_at"); h.delete("updated_at") }
+      check.should =~ expected
 
       # delete
-      response = collections.delete('test', ['aabbcc'])
+      response = collections.delete_many('test', ['aabbcc'])
       response.should include('duration')
 
       # check that the data is gone
-      response = collections.get('test', ['aabbcc', 'ddeeff'])
+      response = collections.select('test', ['aabbcc', 'ddeeff'])
       response.should include('duration', 'response')
       expected = [
         {
+          'id' => 'ddeeff',
+          'collection' => 'test',
           'foreign_id' => 'test:ddeeff',
           'data' => {
             'data' => {
@@ -498,6 +569,8 @@ describe 'Integration tests' do
           }
         }
       ]
+      check = response['response']['data']
+      check.each{ |h| h.delete("created_at"); h.delete("updated_at") }
       response['response']['data'].should =~ expected
     end
 
@@ -511,7 +584,7 @@ describe 'Integration tests' do
           time: DateTime.now.to_s,
         })
         activity.delete('duration')
-        
+
         expect{@client.get_activities()}.to raise_error Stream::StreamApiResponseException
 
         # get by ID
@@ -538,7 +611,7 @@ describe 'Integration tests' do
       end
 
       example 'partial update' do
-        activity = @feed42.add_activity({
+        activityA = @feed42.add_activity({
           actor: "bob",
           verb: "does",
           object: "something",
@@ -550,11 +623,25 @@ describe 'Integration tests' do
             color: "blue",
           }
         })
-        activity.delete("duration")
-        
+        activityA.delete("duration")
+        activityB = @feed42.add_activity({
+          actor: "bob",
+          verb: "eats",
+          object: "nothing",
+          foreign_id: "bob-eats-stuff-#{Time.now.to_i}",
+          time: DateTime.now.to_s,
+          product: {
+            name: "cheetos",
+            price: 0.99,
+            color: "orange",
+          },
+          popularity: 42,
+        })
+        activityB.delete("duration")
+
         # by id
         updated_activity = @client.activity_partial_update(
-          id: activity["id"],
+          id: activityA["id"],
           set: {
             "product.name": "boots",
             "product.price": 7.99,
@@ -566,7 +653,7 @@ describe 'Integration tests' do
           ]
         )
         updated_activity.delete("duration")
-        expected = activity
+        expected = activityA
         expected["product"] = {
           "name" => "boots",
           "price" => 7.99,
@@ -581,8 +668,8 @@ describe 'Integration tests' do
 
         # by foreign id and timestamp
         updated_activity = @client.activity_partial_update(
-          foreign_id: activity["foreign_id"],
-          time: activity["time"],
+          foreign_id: activityA["foreign_id"],
+          time: activityA["time"],
           set: {
             "foo.bar.baz": 42,
             "popularity": 9000
@@ -602,6 +689,253 @@ describe 'Integration tests' do
         }
         expected["popularity"] = 9000
         updated_activity.should eq(expected)
+
+        # in batch
+        response = @client.batch_activity_partial_update([
+          {
+            id: activityA["id"],
+            set: {
+              "product.name": "boots",
+              "product.price": 13.99,
+              "extra": "left"
+            },
+            unset: ["foo"]
+          },
+          {
+            id: activityB["id"],
+            set: {
+              "product.price": 23.99,
+              "extra": "right",
+            },
+            unset: ["popularity"]
+          }
+        ])
+        response["activities"].length.should eq 2
+        activities = @client.get_activities(ids: [activityA["id"]])
+        product = {
+          "name" => "boots",
+          "price" => 13.99
+        }
+        activities["results"][0]["product"].should eq product
+        activities["results"][0]["extra"].should eq "left"
+        expect(activities["results"][0]).not_to include("foo")
+        activities = @client.get_activities(ids: [activityB["id"]])
+        product = {
+          "name" => "cheetos",
+          "color" => "orange",
+          "price" => 23.99
+        }
+        activities["results"][0]["product"].should eq product
+        activities["results"][0]["extra"].should eq "right"
+        expect(activities["results"][0]).not_to include("popularity")
+
+        response = @client.batch_activity_partial_update([
+          {
+            foreign_id: activityA["foreign_id"],
+            time: activityA["time"],
+            set: {
+              "product.name": "trainers",
+              "product.price": 133.99,
+            },
+            unset: ["extra"]
+          },
+          {
+            foreign_id: activityB["foreign_id"],
+            time: activityB["time"],
+            set: {
+              "product.price": 3.99,
+            },
+            unset: ["extra"]
+          }
+        ])
+        response["activities"].length.should eq 2
+        activities = @client.get_activities(ids: [activityA["id"]])
+        product = {
+          "name" => "trainers",
+          "price" => 133.99
+        }
+        activities["results"][0]["product"].should eq product
+        expect(activities["results"][0]).not_to include("extra")
+        activities = @client.get_activities(ids: [activityB["id"]])
+        product = {
+          "name" => "cheetos",
+          "color" => "orange",
+          "price" => 3.99
+        }
+        activities["results"][0]["product"].should eq product
+        expect(activities["results"][0]).not_to include("extra")
+      end
+    end
+
+    describe "user endpoints" do
+      before do
+        @user_id = SecureRandom.uuid
+      end
+      example "add user" do
+        response = @client.users.add(@user_id, :data => {animal: "bear"})
+        response.should include("id", "data", "duration", "created_at", "updated_at")
+        response["id"].should eq @user_id
+        response["data"].should include "animal"
+        response["data"]["animal"].should eq "bear"
+      end
+      example "add user twice" do
+        @client.users.add(@user_id)
+        response = @client.users.add(@user_id, :get_or_create => true)
+        response.should include("id", "data", "duration", "created_at", "updated_at")
+      end
+      example "add user twice with error" do
+        @client.users.add(@user_id)
+        expect{@client.users.add(@user_id)}.to raise_error Stream::StreamApiResponseException
+      end
+      example "get user" do
+        create_response = @client.users.add(@user_id, :data => {animal: "wolf"})
+        get_response = @client.users.get(@user_id)
+
+        create_response.delete("duration")
+        get_response.delete("duration")
+
+        get_response.should eq create_response
+      end
+      example "update user" do
+        @client.users.add(@user_id)
+        response = @client.users.update(@user_id, :data => {animal: "dog"})
+        response.should include("id", "data", "duration", "created_at", "updated_at")
+        response["data"]["animal"].should eq "dog"
+      end
+      example "delete user" do
+        @client.users.add(@user_id)
+        @client.users.delete(@user_id)
+        expect{@client.users.get(@user_id)}.to raise_error Stream::StreamApiResponseException
+      end
+    end
+
+    describe "reaction endpoints" do
+      before do
+        @activity = @feed42.add_activity(:actor => "john", :verb => "tweet", :object => 1)
+      end
+      example "add reaction" do
+        response = @client.reactions.add("like", @activity["id"], "jim")
+        response.should include("id", "kind", "activity_id", "user_id",
+                                "data", "parent", "latest_children",
+                                "children_counts", "duration", "created_at", "updated_at")
+        response["activity_id"].should eq @activity["id"]
+        response["user_id"].should eq "jim"
+        response["kind"].should eq "like"
+      end
+      example "get reaction" do
+        create_response = @client.reactions.add("like", @activity["id"], "jim")
+        response = @client.reactions.get(create_response["id"])
+        response.should include("id", "kind", "activity_id", "user_id",
+                                "data", "parent", "latest_children",
+                                "children_counts", "duration", "created_at", "updated_at")
+        response["activity_id"].should eq @activity["id"]
+        response["user_id"].should eq "jim"
+        response["kind"].should eq "like"
+        response["data"].should eq({})
+        response["parent"].should eq ""
+        response["latest_children"].should eq({})
+        response["children_counts"].should eq({})
+      end
+      example "update reaction" do
+        create_response = @client.reactions.add("like", @activity["id"], "jim")
+        response = @client.reactions.update(create_response["id"], :data => {animal: "lion"})
+
+        response["data"]["animal"].should eq "lion"
+      end
+      example "add child reaction" do
+        create_response = @client.reactions.add("like", @activity["id"], "jim")
+        response = @client.reactions.add_child("dislike", create_response["id"], "john")
+
+        response["parent"].should eq create_response["id"]
+      end
+      example "delete reaction" do
+        reaction = @client.reactions.add("like", @activity["id"], "jim")
+        @client.reactions.delete(reaction['id'])
+        expect{@client.reactions.get(reaction['id'])}.to raise_error Stream::StreamApiResponseException
+      end
+      example "filter reactions" do
+        parent = @client.reactions.add("like", @activity["id"], "jim")
+        child = @client.reactions.add_child("like", parent["id"], "juan")
+        comment = @client.reactions.add("comment", @activity["id"], "jim")
+
+        parent.delete("duration")
+        child.delete("duration")
+        comment.delete("duration")
+
+        response = @client.reactions.filter(:reaction_id => parent["id"])
+        response["results"][0].should eq child
+
+        response = @client.reactions.filter(:user_id => "jim", :id_gt => parent["id"])
+        response["results"][0].should eq comment
+
+        response = @client.reactions.filter(:kind => "like", :activity_id => @activity["id"], :id_lte => child["id"])
+        response["results"].length.should eq 1
+        response["results"][0]["latest_children"]["like"][0].should eq child
+
+        response = @client.reactions.filter(:kind => "comment", :activity_id => @activity["id"])
+        response["results"][0].should eq comment
+      end
+      example "get with activity data" do
+        @activity.delete("duration")
+        @client.reactions.add("like", @activity["id"], "jim")
+        response = @client.reactions.filter(:activity_id => @activity["id"], :with_activity_data => true)
+
+        response["activity"].delete("latest_reactions")
+        response["activity"].delete("latest_reactions_extra")
+        response["activity"].delete("own_reactions")
+        response["activity"].delete("reaction_counts")
+        response["activity"].should eq @activity
+      end
+      example "with target feeds" do
+        reaction = @client.reactions.add("like", @activity["id"], "juan", :target_feeds => [@feed43.id])
+        reaction.delete('duration')
+        response = @feed43.get()
+
+        response["results"][0]["reaction"].should eq @client.reactions.create_reference(reaction)
+        response["results"][0]["verb"].should eq "like"
+      end
+    end
+
+    describe "feed enrichment" do
+      example "collection item enrichment" do
+        bear = @client.collections.add("animals", {type: "bear", color: "blue"})
+        bear.delete("duration")
+
+        @feed42.add_activity({:actor => "john", :verb => "chase", :object => @client.collections.create_reference("animals", bear)})
+        response = @feed42.get(:enrich => true)
+        response["results"][0]["object"].should eq bear
+      end
+      example "user enrichment" do
+        user = @client.users.add(SecureRandom.uuid, :data => {"name": "john"})
+        user.delete("duration")
+
+        @feed42.add_activity({:actor => @client.users.create_reference(user["id"]), :verb => "chase", :object => "car:43"})
+        response = @feed42.get(:enrich => true)
+        response["results"][0]["actor"].should eq user
+      end
+      example "own reaction enrichment" do
+        activity = @feed42.add_activity({:actor => "jim", :verb => "buy", :object => "wallet"})
+        reaction = @client.reactions.add("like", activity["id"], "jim")
+        reaction.delete('duration')
+
+        response = @feed42.get(:reactions => {:own => true})
+        response["results"][0]["own_reactions"]["like"][0].should eq reaction
+      end
+      example "recent reaction enrichment" do
+        activity = @feed42.add_activity({:actor => "jim", :verb => "buy", :object => "wallet"})
+        reaction = @client.reactions.add("dislike", activity["id"], "jim")
+        reaction.delete('duration')
+
+        response = @feed42.get(:reactions => {:recent => true})
+        response["results"][0]["latest_reactions"]["dislike"][0].should eq reaction
+      end
+      example "reaction counts enrichment" do
+        activity = @feed42.add_activity({:actor => "jim", :verb => "buy", :object => "wallet"})
+        reaction = @client.reactions.add("like", activity["id"], "jim")
+        reaction.delete('duration')
+
+        response = @feed42.get(:reactions => {:counts => true})
+        response["results"][0]["reaction_counts"]["like"].should eq 1
       end
     end
   end
